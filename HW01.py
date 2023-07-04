@@ -1,7 +1,9 @@
+## PDI - HW01 - Felipe Derewlany Gutierrez - UTFPR-CT
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import cv2
+from skimage import exposure
 
 
 matplotlib.use('TkAgg')
@@ -17,18 +19,18 @@ rect_origin = 100
 image[rect_origin:rect_origin+rect_size_h, rect_origin:rect_origin+rect_size_w, 0] = 127
 
 # (b) círculo preenchido blue valor 127 matriz GREEN
-circle_radius = 100
-circle_center_x = 400
-circle_center_z = 400
+circle_radius = 200
+circle_center_x = round(N/2)
+circle_center_z = round(N/2)
 
 # matemática
-# for i in range(N):
-#     for j in range(N):
-#         if (i - circle_center_x) ** 2 + (j - circle_center_z) ** 2 < circle_radius ** 2:
-#                 image[j, i, 1] = 127
+for i in range(N):
+    for j in range(N):
+        if (i - circle_center_x) ** 2 + (j - circle_center_z) ** 2 < circle_radius ** 2:
+                image[j, i, 1] = 127
 
 # opencv
-cv2.circle(image, (circle_center_x, circle_center_z), circle_radius, (0, 127, 0), -1, 8)
+# cv2.circle(image, (circle_center_x, circle_center_z), circle_radius, (0, 127, 0), -1, 8)
 
 # (c) seno com 8 ciclos ao longo da largura 0 a 127 matriz BLUE
 k = 8
@@ -55,17 +57,17 @@ plt.title('1d - matriz BLUE')
 # plt.show()
 
 # junta os canais numa imagem RGB
-merged_rgb_img = cv2.merge([image[:, :, 0], image[:, :, 1], image[:, :, 2]])
+# merged_rgb_img = cv2.merge([image[:, :, 0], image[:, :, 1], image[:, :, 2]])
 
 plt.figure(4)
-plt.imshow(merged_rgb_img, aspect='equal')
+plt.imshow(image, aspect='equal')
 plt.title('1d - imagem RGB')
 # plt.show()
 
 # 2 - CROP imagem central de 400 x 400 pixels e apresentar
 crop_size = 400
 diff = N - crop_size
-cropped_img = merged_rgb_img[diff//2:N-diff//2, diff//2:N-diff//2, :]
+cropped_img = image[diff//2:N-diff//2, diff//2:N-diff//2, :]
 
 plt.figure(5)
 plt.imshow(cropped_img, aspect='equal')
@@ -88,7 +90,8 @@ In_norm = In/np.linalg.norm(In)
 In_db = 20 * np.log10(In_norm+0.001)
 
 # plt.figure()
-# plt.imshow(In_norm, aspect='equal')
+# plt.imshow(In_db, aspect='equal', cmap='gray', vmin=0, vmax=255)
+# plt.title('3 - ruído distribuição uniforme - normalizado')
 # plt.show()
 
 # (c) Apresentar AVG e STD_DEV de (A) e (B)
@@ -98,50 +101,124 @@ print(f'AVG(B) = {np.average(In_db)}')
 print(f'STD_DEV(B) = {np.std(In_db)}')
 
 # 4 - 3 exemplos "SEUS" de correção de histograma
-# filename1 = 'something.png'
-# image1 = cv2.imread(filename1)
-
-frame = np.load('frame1501_112x112_liu1997_python.npy')
-
-# plt.figure(10)
-# plt.imshow(frame, aspect='equal', cmap='gray', vmin=0, vmax=255)
-# # plt.show()
-#
-# plt.figure(11)
-# plt.hist(frame)
-# # plt.show()
-
-bug = cv2.imread('stinkbug.png')
-bug_gray = cv2.cvtColor(bug, cv2.COLOR_BGR2GRAY)
+filename1 = 'simulation_frame_low_brightness.png'
+img1 = cv2.imread(filename1)
+img1_gray = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
 
 plt.figure()
-plt.imshow(bug_gray, aspect='equal', cmap='gray', vmin=0, vmax=255)
+plt.imshow(img1_gray, aspect='equal', cmap='gray', vmin=0, vmax=255)
 plt.suptitle('4 - Exemplo correção/equalização de histograma')
 plt.title('Imagem 1 - original')
 # plt.show()
 
 plt.figure()
-plt.hist(bug_gray)
+plt.hist(img1_gray)
 plt.suptitle('4 - Exemplo correção/equalização de histograma')
 plt.title('Histograma Imagem 1 - original')
 # plt.show()
 
-bug_eq = cv2.equalizeHist(bug_gray)
+# Contrast stretching
+p2, p98 = np.percentile(img1_gray, (2, 98))
+img1_rescale = 255 * exposure.rescale_intensity(img1_gray, in_range=(p2, p98))
+
+# Equalization
+img1_eq_sci = 255 * exposure.equalize_hist(img1_gray)
+img1_eq_open = cv2.equalizeHist(img1_gray)
+
+# Adaptive Equalization
+img1_adapteq = 255 * exposure.equalize_adapthist(img1_gray, clip_limit=0.03)
+
 
 plt.figure()
-plt.imshow(bug_eq, aspect='equal', cmap='gray', vmin=0, vmax=255)
+plt.imshow(img1_adapteq, aspect='equal', cmap='gray', vmin=0, vmax=255)
 plt.suptitle('4 - Exemplo correção/equalização de histograma')
 plt.title('Imagem 1 - corrigida')
 # plt.show()
 
 plt.figure()
-plt.hist(bug_eq)
+plt.hist(img1_adapteq)
 plt.suptitle('4 - Exemplo correção/equalização de histograma')
 plt.title('Histograma Imagem 1 - corrigida')
 # plt.show()
 
+filename2 = 'longhair_dude_low.png'
+
+img2 = cv2.imread(filename2)
+img2_gray = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+
+plt.figure()
+plt.imshow(img2_gray, aspect='equal', cmap='gray', vmin=0, vmax=255)
+plt.suptitle('4 - Exemplo correção/equalização de histograma')
+plt.title('Imagem 2 - original')
+# plt.show()
+
+plt.figure()
+plt.hist(img2_gray)
+plt.suptitle('4 - Exemplo correção/equalização de histograma')
+plt.title('Histograma Imagem 2 - original')
+# plt.show()
+
+# Contrast stretching
+p2, p98 = np.percentile(img2_gray, (2, 98))
+img2_rescale = 255 * exposure.rescale_intensity(img2_gray, in_range=(p2, p98))
+
+# Equalization
+img2_eq_sci = 255 * exposure.equalize_hist(img2_gray)
+img2_eq_open = cv2.equalizeHist(img2_gray)
+
+# Adaptive Equalization
+img2_adapteq = 255 * exposure.equalize_adapthist(img2_gray, clip_limit=0.03)
 
 
+plt.figure()
+plt.imshow(img2_eq_open, aspect='equal', cmap='gray', vmin=0, vmax=255)
+plt.suptitle('4 - Exemplo correção/equalização de histograma')
+plt.title('Imagem 2 - corrigida')
+# plt.show()
 
+plt.figure()
+plt.hist(img2_eq_open)
+plt.suptitle('4 - Exemplo correção/equalização de histograma')
+plt.title('Histograma Imagem 2 - corrigida')
+# plt.show()
+
+filename3 = '/home/felipegutierrez/Documents/PDI/bscan_acrilico2_env.jpeg'
+
+img3 = cv2.imread(filename3)
+img3_gray = cv2.cvtColor(img3, cv2.COLOR_BGR2GRAY)
+
+# Contrast stretching
+p2, p98 = np.percentile(img3_gray, (2, 98))
+img3_rescale = 255 * exposure.rescale_intensity(img3_gray, in_range=(p2, p98))
+
+# Equalization
+img3_eq = 255 * exposure.equalize_hist(img3_gray)
+
+# Adaptive Equalization
+img3_adapteq = 255 * exposure.equalize_adapthist(img3_gray, clip_limit=0.03)
+
+plt.figure()
+plt.imshow(img3_gray, aspect='equal', cmap='gray', vmin=0, vmax=255)
+plt.suptitle('4 - Exemplo correção/equalização de histograma')
+plt.title('Imagem 3 - original')
+# plt.show()
+
+plt.figure()
+plt.hist(img3_gray)
+plt.suptitle('3 - Exemplo correção/equalização de histograma')
+plt.title('Histograma Imagem 3 - original')
+# plt.show()
+
+plt.figure()
+plt.imshow(img3_adapteq, aspect='equal', cmap='gray', vmin=0, vmax=255)
+plt.suptitle('4 - Exemplo correção/equalização de histograma')
+plt.title('Imagem 3 - corrigida')
+# plt.show()
+
+plt.figure()
+plt.hist(img3_adapteq)
+plt.suptitle('4 - Exemplo correção/equalização de histograma')
+plt.title('Histograma Imagem 3 - corrigida')
+plt.show()
 
 print('END')
